@@ -29,8 +29,6 @@ export class Modal {
             document.body.removeChild(this.backdropElement);
             this.modalElement = null;
             this.backdropElement = null;
-
-
         }
     }
 }
