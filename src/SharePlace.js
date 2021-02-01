@@ -1,21 +1,26 @@
 import { Modal } from './UI/Modal';
 import { Map } from './UI/Map';
-import { getCoordsFromAddress } from './Utility/Location';
+import { getCoordsFromAddress, getAddressFromCoords } from './Utility/Location';
 class PlaceFinder {
     constructor() {
         const addressForm = document.querySelector('form');
         const locateUserBtn = document.getElementById('locate-btn');
+        this.shareBtn = document.getElementById('share-btn');
 
         locateUserBtn.addEventListener('click', this.locateUserHandler.bind(this));
+        //this.shareBtn.addEventListener('click',)
         addressForm.addEventListener('submit', this.findAddressHandler.bind(this));
     }
 
-    selectPlace(coordinates) {
+    selectPlace(coordinates, address) {
         if (this.map) {
             this.map.render(coordinates);
         } else {
-            new Map(coordinates);
+            this.map = new Map(coordinates);
         }
+        this.shareBtn.disabled = false;
+        const sharedLinkInputElement = document.getElementById('share-link');
+        sharedLinkInputElement.value = `${location.origin}/my-place?address=${encodeURI(address)}&lat=${coordinates.lat}&lng=${coordinates.lng}`;
     }
     locateUserHandler() {
         if (!navigator.geolocation) {
@@ -25,13 +30,14 @@ class PlaceFinder {
         const modal = new Modal('loading-modal-content', 'Loading location - please wait!');
         modal.show();
         navigator.geolocation.getCurrentPosition(
-            successResult => {
-                modal.hide();
+            async successResult => {
                 const coordinates = {
                     lat: successResult.coords.latitude,
                     lng: successResult.coords.longitude
-                }
-                this.selectPlace(coordinates);
+                };
+                const address = await getAddressFromCoords(coordinates);
+                modal.hide();
+                this.selectPlace(coordinates, address);
             }, error => {
                 modal.hide();
                 alert('Could not locate you unfortunately. Please enter an address manually.')
@@ -49,7 +55,7 @@ class PlaceFinder {
         modal.show();
         try {
             const coordinates = await getCoordsFromAddress(address);
-            this.selectPlace(coordinates);
+            this.selectPlace(coordinates, address);
         } catch (err) {
             alert(err.message);
         }
